@@ -40,6 +40,8 @@ struct config {
 	int kbmap[MAX_BUTTONS];
 	int led, grab;
 	int repeat;
+	int led_idle_seconds;
+	int lcd_flags, lcd_brightness, lcd_idle_seconds;
 	char *serdev;
 };
 

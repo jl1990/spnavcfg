@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ui_bnmaprow.h"
 #include "ui_about.h"
 #include <QMessageBox>
+#include <QSignalBlocker>
+#include <QStatusBar>
 
 #include <X11/Xlib.h>
 
@@ -187,6 +189,12 @@ bool MainWin::init()
 		connect(combo_axismap[i], SIGNAL(currentIndexChanged(int)), this, SLOT(combo_idx_changed(int)));
 	}
 
+	connect(ui->spin_led_idle, SIGNAL(valueChanged(int)), this, SLOT(led_idle_changed()));
+	connect(ui->combo_screen, SIGNAL(currentIndexChanged(int)), this, SLOT(screen_changed()));
+	connect(ui->chk_screen_title, SIGNAL(toggled(bool)), this, SLOT(screen_changed()));
+	connect(ui->spin_screen_brightness, SIGNAL(valueChanged(int)), this, SLOT(screen_changed()));
+	connect(ui->spin_screen_idle, SIGNAL(valueChanged(int)), this, SLOT(screen_changed()));
+	connect(ui->bn_screen_refresh, SIGNAL(clicked()), this, SLOT(screen_refresh()));
 	return true;
 }
 
@@ -306,6 +314,7 @@ void MainWin::updateui()
 		connect(bnrow[i].cmb_mapkey, SIGNAL(currentTextChanged(const QString&)), this, SLOT(combo_str_changed(const QString&)));
 	}
 
+	update_screen();
 	mask_events = false;
 }
 
@@ -404,7 +413,9 @@ void MainWin::act_trig()
 		}
 	} else if(src == ui->act_savecfg) {
 		if(QMessageBox::question(this, "Save configuration?", qsave_text) == QMessageBox::Yes) {
-			spnav_cfg_save();
+			statusBar()->showMessage(spnav_cfg_save() < 0 ?
+				"Could not save configuration. Check the daemon connection and configuration file permissions." :
+				"Configuration saved.");
 		}
 	} else if(src == ui->act_about) {
 		aboutbox();
@@ -697,4 +708,71 @@ extern "C" void aboutbox(void)
 	dlg->exec();
 
 	delete dlg;
+}
+
+void MainWin::update_screen()
+{
+	QSignalBlocker ledIdle(ui->spin_led_idle);
+	ui->spin_led_idle->setValue(cfg.led_idle_seconds < 0 ? 0 : cfg.led_idle_seconds);
+	ui->spin_led_idle->setEnabled(cfg.led_idle_seconds >= 0);
+	QSignalBlocker mode(ui->combo_screen), title(ui->chk_screen_title);
+	QSignalBlocker brightness(ui->spin_screen_brightness), idle(ui->spin_screen_idle);
+	bool supported = devinfo.type == SPNAV_DEV_SMENT && cfg.lcd_flags >= 0;
+	bool on = supported && (cfg.lcd_flags & SPNAV_LCD_ENABLED);
+	ui->combo_screen->setCurrentIndex(on ? 1 : 0);
+	ui->combo_screen->setEnabled(supported);
+	ui->chk_screen_title->setChecked(supported && (cfg.lcd_flags & SPNAV_LCD_PROFILE));
+	ui->chk_screen_title->setEnabled(on);
+	ui->spin_screen_brightness->setValue(cfg.lcd_brightness < 0 ? 0 : cfg.lcd_brightness);
+	ui->spin_screen_brightness->setEnabled(on && cfg.lcd_brightness >= 0);
+	ui->spin_screen_idle->setValue(cfg.lcd_idle_seconds < 0 ? 0 : cfg.lcd_idle_seconds);
+	ui->spin_screen_idle->setEnabled(on && cfg.lcd_idle_seconds >= 0);
+	ui->bn_screen_refresh->setEnabled(supported);
+	ui->lb_screen_status->setText(devinfo.type != SPNAV_DEV_SMENT ?
+		"Screen controls are available for the SpaceMouse Enterprise." : cfg.lcd_flags < 0 ?
+		"Screen controls require a compatible spacenavd built with LCD support." :
+		"Choose Save config to keep these settings after a restart.");
+}
+
+void MainWin::screen_changed()
+{
+	if(mask_events || cfg.lcd_flags < 0 || devinfo.type != SPNAV_DEV_SMENT) return;
+	int result;
+	QObject *src = sender();
+	if(src == ui->spin_screen_brightness) {
+		int value = ui->spin_screen_brightness->value();
+		result = spnav_cfg_set_lcd_brightness(value);
+		if(result == 0) cfg.lcd_brightness = value;
+	} else if(src == ui->spin_screen_idle) {
+		int value = ui->spin_screen_idle->value();
+		result = spnav_cfg_set_lcd_idle(value);
+		if(result == 0) cfg.lcd_idle_seconds = value;
+	} else {
+		int flags = (ui->combo_screen->currentIndex() ? SPNAV_LCD_ENABLED : 0) |
+			(ui->chk_screen_title->isChecked() ? SPNAV_LCD_PROFILE : 0);
+		result = spnav_cfg_set_lcd(flags);
+		if(result == 0) cfg.lcd_flags = flags;
+	}
+	update_screen();
+	if(result < 0) ui->lb_screen_status->setText("Could not change the screen settings. Check the daemon connection.");
+}
+
+void MainWin::screen_refresh()
+{
+	int result = spnav_lcd_refresh();
+	ui->lb_screen_status->setText(result < 0 ?
+		"Could not refresh the screen. Check the device connection and the daemon's USB/hidraw permissions." :
+		"Screen settings applied to the device.");
+}
+
+void MainWin::led_idle_changed()
+{
+	if(mask_events || cfg.led_idle_seconds < 0) return;
+	int value = ui->spin_led_idle->value();
+	if(spnav_cfg_set_led_idle(value) == 0) cfg.led_idle_seconds = value;
+	else {
+		QSignalBlocker blocker(ui->spin_led_idle);
+		ui->spin_led_idle->setValue(cfg.led_idle_seconds);
+		statusBar()->showMessage("Could not change the LED inactivity timeout.");
+	}
 }

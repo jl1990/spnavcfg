@@ -151,6 +151,10 @@
          <string>General</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
+ <item><layout class="QHBoxLayout" name="led_idle_layout">
+  <item><widget class="QLabel" name="lb_led_idle"><property name="text"><string>LED inactivity timeout</string></property><property name="buddy"><cstring>spin_led_idle</cstring></property></widget></item>
+  <item><widget class="QSpinBox" name="spin_led_idle"><property name="maximum"><number>86400</number></property><property name="singleStep"><number>60</number></property><property name="suffix"><string> seconds</string></property><property name="specialValueText"><string>Never</string></property><property name="keyboardTracking"><bool>false</bool></property><property name="toolTip"><string>Turn the joystick LED off while idle. Movement or a button press restores its On/Auto state. LED Off remains off.</string></property></widget></item>
+ </layout></item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
@@ -287,7 +291,7 @@
     <item>
      <widget class="QLabel" name="label_19">
       <property name="text">
-       <string>Note: changes will only affect the current session, and will not persist across spacenavd restarts, unless you save them to the configuration file by pressing &lt;em&gt;&quot;Save config&quot;&lt;/em&gt;, or selecting it from the File menu.</string>
+       <string>Changes apply immediately. Choose Save config to keep them after a restart.</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -997,7 +1001,28 @@
         </item>
        </layout>
       </widget>
-     </widget>
+     <widget class="QWidget" name="tab_screen">
+ <attribute name="title"><string>Screen</string></attribute>
+ <layout class="QVBoxLayout" name="screen_layout">
+  <item><widget class="QLabel" name="lb_screen_intro">
+   <property name="text"><string>SpaceMouse Enterprise display</string></property>
+  </widget></item>
+  <item><layout class="QFormLayout" name="screen_form">
+   <item row="0" column="0"><widget class="QLabel" name="lb_screen_power"><property name="text"><string>Screen</string></property><property name="buddy"><cstring>combo_screen</cstring></property></widget></item>
+   <item row="0" column="1"><widget class="QComboBox" name="combo_screen"><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>On</string></property></item></widget></item>
+   <item row="1" column="0"><widget class="QLabel" name="lb_screen_brightness"><property name="text"><string>Brightness</string></property><property name="buddy"><cstring>spin_screen_brightness</cstring></property></widget></item>
+   <item row="1" column="1"><widget class="QSpinBox" name="spin_screen_brightness"><property name="maximum"><number>100</number></property><property name="suffix"><string>%</string></property><property name="keyboardTracking"><bool>false</bool></property></widget></item>
+   <item row="2" column="0"><widget class="QLabel" name="lb_screen_idle"><property name="text"><string>Turn off after inactivity</string></property><property name="buddy"><cstring>spin_screen_idle</cstring></property></widget></item>
+   <item row="2" column="1"><widget class="QSpinBox" name="spin_screen_idle"><property name="maximum"><number>86400</number></property><property name="singleStep"><number>60</number></property><property name="suffix"><string> seconds</string></property><property name="specialValueText"><string>Never</string></property><property name="keyboardTracking"><bool>false</bool></property></widget></item>
+  </layout></item>
+  <item><widget class="QLabel" name="lb_screen_idle_help"><property name="wordWrap"><bool>true</bool></property><property name="text"><string>After automatic sleep, move the SpaceMouse or press a button to wake the screen. Choosing Off keeps it off until you switch it on again. Brightness is remembered while off.</string></property></widget></item>
+  <item><widget class="QCheckBox" name="chk_screen_title"><property name="text"><string>Show profile name above button labels</string></property></widget></item>
+  <item><widget class="QPushButton" name="bn_screen_refresh"><property name="text"><string>Refresh screen</string></property><property name="toolTip"><string>Apply the screen settings and redraw the current button labels.</string></property></widget></item>
+  <item><widget class="QLabel" name="lb_screen_status"><property name="wordWrap"><bool>true</bool></property><property name="text"><string/></property></widget></item>
+  <item><spacer name="screen_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
+ </layout>
+</widget>
+</widget>
     </item>
    </layout>
   </widget>

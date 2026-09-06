@@ -31,6 +31,7 @@ class MainWin : public QMainWindow {
 
 private:
 	Ui::win_main *ui;
+	void update_screen();
 
 public:
 	explicit MainWin(QWidget *par = 0);
@@ -43,6 +44,9 @@ public slots:
 	void spnav_input();
 
 	void act_trig();
+	void screen_changed();
+	void led_idle_changed();
+	void screen_refresh();
 	void slider_changed(int val);
 	void dspin_changed(double val);
 	void spin_changed(int val);

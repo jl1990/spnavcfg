@@ -65,6 +65,10 @@ int read_cfg(struct config *cfg)
 	cfg->swapyz = spnav_cfg_get_swapyz();
 	cfg->led = spnav_cfg_get_led();
 	cfg->grab = spnav_cfg_get_grab();
+	cfg->led_idle_seconds = spnav_cfg_get_led_idle();
+	cfg->lcd_flags = spnav_cfg_get_lcd();
+	cfg->lcd_brightness = cfg->lcd_flags < 0 ? -1 : spnav_cfg_get_lcd_brightness();
+	cfg->lcd_idle_seconds = cfg->lcd_flags < 0 ? -1 : spnav_cfg_get_lcd_idle();
 
 	for(i=0; i<devinfo.naxes; i++) {
 		cfg->map_axis[i] = spnav_cfg_get_axismap(i);
