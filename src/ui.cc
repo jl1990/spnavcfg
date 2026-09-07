@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SPNAV_CONFIG_H_
 #include <spnav.h>
 #include "ui.h"
+#include "profiles.h"
+#include <QCloseEvent>
 #include "spnavcfg.h"
 #include "ui_mainwin.h"
 #include "ui_bnmaprow.h"
@@ -198,8 +200,25 @@ bool MainWin::init()
 	return true;
 }
 
+void MainWin::closeEvent(QCloseEvent *event)
+{
+ if(profiles && !profiles->confirmClose())event->ignore();else event->accept();
+}
+
 void MainWin::updateui()
 {
+ if(!profilesChecked && spnav_fd()>=0) {
+  profilesChecked=true;
+  auto *editor=new ProfileEditor(devinfo.naxes,devinfo.nbuttons,this);
+  if(editor->load()){
+   profiles=editor;
+   ui->label_19->setText(tr("General and Screen changes apply immediately. Profile edits use Apply or Save below."));
+   ui->tabWidget_2->removeTab(ui->tabWidget_2->indexOf(ui->tab_axes));
+   ui->tabWidget_2->removeTab(ui->tabWidget_2->indexOf(ui->tab_buttons));
+   ui->tabWidget_2->insertTab(0,profiles,tr("Profiles"));ui->tabWidget_2->setCurrentIndex(0);
+  }else delete editor;
+ }
+
 	mask_events = true;
 
 	struct device_image devimg = devimglist[0];
@@ -332,6 +351,9 @@ void MainWin::spnav_input()
 
 	while(spnav_poll_event(&ev)) {
 		switch(ev.type) {
+		case SPNAV_EVENT_RAWAXIS:
+			if(profiles)profiles->axisValue(ev.axis.idx,ev.axis.value);
+			break;
 		case SPNAV_EVENT_MOTION:
 			for(int i=0; i<6; i++) {
 				if(abs(ev.motion.data[i]) > maxval) maxval = abs(ev.motion.data[i]);
@@ -344,6 +366,7 @@ void MainWin::spnav_input()
 			break;
 
 		case SPNAV_EVENT_RAWBUTTON:
+			if(profiles && ev.button.press)profiles->selectButton(ev.button.bnum);
 			if(ev.button.bnum >= bnrow_count) {
 				if(!warned_unexp_bnum) {
 					warned_unexp_bnum = 1;
@@ -401,15 +424,19 @@ static const char *qsave_text =
 void MainWin::act_trig()
 {
 	QObject *src = QObject::sender();
+	if(profiles && src == ui->act_savecfg){profiles->save();return;}
+	if(profiles && (src == ui->act_default || src == ui->act_loadcfg) && !profiles->confirmClose())return;
 	if(src == ui->act_default) {
 		if(QMessageBox::question(this, "Reset defaults?", qdefaults_text) == QMessageBox::Yes) {
 			spnav_cfg_reset();
 			read_cfg(&cfg);
+			if(profiles)profiles->load();
 		}
 	} else if(src == ui->act_loadcfg) {
 		if(QMessageBox::question(this, "Restore configuration?", qload_text) == QMessageBox::Yes) {
 			spnav_cfg_restore();
 			read_cfg(&cfg);
+			if(profiles)profiles->load();
 		}
 	} else if(src == ui->act_savecfg) {
 		if(QMessageBox::question(this, "Save configuration?", qsave_text) == QMessageBox::Yes) {

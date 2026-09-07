@@ -26,11 +26,15 @@ namespace Ui {
 	class win_main;
 }
 
+class ProfileEditor;
 class MainWin : public QMainWindow {
 	Q_OBJECT
 
 private:
 	Ui::win_main *ui;
+	ProfileEditor *profiles = nullptr;
+	bool profilesChecked = false;
+	void closeEvent(QCloseEvent *event) override;
 	void update_screen();
 
 public:
